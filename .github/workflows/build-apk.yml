@@ -10,6 +10,17 @@ jobs:
       - uses: actions/setup-java@v4
         with: { distribution: temurin, java-version: 17 }
       - run: npm install --legacy-peer-deps
-      - run: cd android && chmod +x gradlew && ./gradlew assembleRelease
+      - name: Build APK
+        run: |
+          cd android
+          chmod +x gradlew
+          ./gradlew assembleRelease --console=plain > ../build.log 2>&1 || { echo "::error title=Build failed::$(grep -nE 'FAILURE|What went wrong|error:|^e: |Execution failed|Could not' ../build.log | head -40 | sed ':a;N;$!ba;s/\n/%0A/g')"; exit 1; }
       - uses: actions/upload-artifact@v4
-        with: { name: LocalConnect-apk, path: android/app/build/outputs/apk/release/app-release.apk }
+        if: always()
+        with:
+          name: build-log
+          path: build.log
+      - uses: actions/upload-artifact@v4
+        with:
+          name: LocalConnect-apk
+          path: android/app/build/outputs/apk/release/app-release.apk
